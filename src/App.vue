@@ -79,7 +79,7 @@ let formData =ref({
 })
 
 function resetForm() {
-  formData.value = {
+  formData.value ={
     name: '',
     gender: '',
     age: '',
