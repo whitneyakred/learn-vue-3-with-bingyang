@@ -1,42 +1,149 @@
 <template>
   <h1>{{ message }}</h1>
-  <button @click="sortUsersByAge">Sort users by age</button>
-  <button @click="hideInactiveUsers">Hide inactive users</button>
-  <button @click="showFirstTwoUsers">Show first two users</button>
-  <ul>
-    <li v-for="(user, index) in users" :key="user.id">
-      {{ index }} - {{ user.id }} - {{ user.name }} - {{ user.age }} -
-      {{ user.isActive }}
-    </li>
-  </ul>
+
+  <div class="card">
+    <h1>Scenario 1: Watch a "ref(primitive value)"</h1>
+    <h2>Number: {{ number }}</h2>
+    <button @click="number++">Increment number by 1</button>
+  </div>
+
+
+  <div class="card">
+    <h1>Scenario 2: Watch a property in "ref(object)"</h1>
+    <h2>Name: {{ wizard1.name }}</h2>
+    <h2>Wand: {{ wizard1.wand }}</h2>
+
+    <button @click="wizard1.name =wizard1.name.toUpperCase()">
+      Change name to upper case
+    </button>
+
+    <button @click="changeWizard1Wand">Change wand</button>
+
+    <button @click="wizard1.wand.core ='Unicorn Hair'">
+      Change wand core
+    </button>
+  </div>
+
+  <div class="card">
+    <h1>Scenario 3: Watch a "ref(object)"</h1>
+    <h2>Name: {{ wizard2.name }}</h2>
+    <h2>Wand: {{ wizard2.wand }}</h2>
+
+    <button @click="wizard2.name =wizard2.name.toUpperCase()">
+      Change name to upper case
+    </button>
+
+    <button @click="wizard2.wand.core ='Phoenix Feather'">
+      Change wand core
+    </button>
+
+    <button @click="changeWizard">Change wizard</button>
+  </div>
 </template>
 
-
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
-let message =ref('Hello, Array Change Detection!')
+let message =ref('Hello, Watchers!')
 
-const users =ref([
-  { id: 1001, name: 'John Smith', age: 26, isActive: false },
-  { id: 1002, name: 'Tom Doe', age: 16, isActive: false },
-  { id: 1003, name: 'Frankin Wong', age: 18, isActive: true }
-])
+let number =ref(1)
+const stopWatch =watch(number, (newValue, oldValue) => {
+  console.log(
+    'Watch a ref(primitive value): number changes',
+    newValue,
+    oldValue
+  )
+  if (newValue >=5) {
+    stopWatch()
+  }
+}, {immediate:true})
 
-function sortUsersByAge() {
-  users.value.sort((a, b) => a.age - b.age)
+let wizard1 =ref({
+  id: 1001,
+  name: 'Harry Potter',
+  house: 'Gryffindor',
+  age: 17,
+  wand: {
+    core: 'Phoenix Feather',
+    wood: 'Holly'
+  }
+})
+
+function changeWizard1Wand() {
+  wizard1.value.wand = {
+    core: 'Dragon Heartstring',
+    wood: 'Vine'
+  }
 }
-function hideInactiveUsers() {
-  users.value =users.value.filter((user) => user.isActive)
+
+watch(() => wizard1.value.name,(newValue, oldValue) => {
+    console.log(
+      'Watch a property in a ref(object): wizard1 name changes',
+      newValue,
+      oldValue
+    )
+  }
+)
+watch(() => wizard1.value.wand,(newValue, oldValue) => {
+    console.log(
+      'Watch a property in a ref(object): wizard1 wand changes',
+      newValue,
+      oldValue
+    )
+  },
+  { deep: true }
+)
+
+let wizard2 =ref({
+  id: 1003,
+  name: 'Ron Weasley',
+  house: 'Gryffindor',
+  age: 17,
+  wand: {
+    core: 'Unicorn Hair',
+    wood: 'Willow'
+  }
+})
+
+function changeWizard() {
+  wizard2.value = {
+    id: 1002,
+    name: 'Hermione Granger',
+    house: 'Gryffindor',
+    age: 17,
+    wand: {
+      core: 'Dragon Heartstring',
+      wood: 'Vine'
+    }
+  }
 }
-function showFirstTwoUsers() {
-  users.value =users.value.slice(0, 2)
-}
+
+watch(
+  wizard2,
+  (newValue, oldValue) => {
+    console.log('Watch a ref(object): wizard2 changes', newValue, oldValue)
+  },
+  { deep: true }
+)
+
+watch(
+  [number, () => wizard1.value.name, wizard2],
+  (newValue, oldValue) => {
+    console.log(
+      'Watch an array of ref(primitive value), a property of a ref(object), and a ref(object)'
+    )
+  },
+  {
+    deep: true
+  }
+)
 </script>
 
 <style scoped>
-.inactive {
-  color: red;
-  text-decoration: line-through;
+.card {
+  background-color: purple;
+  color: white;
+  padding: 20px 10px;
+  margin-bottom: 10px;
 }
 </style>
