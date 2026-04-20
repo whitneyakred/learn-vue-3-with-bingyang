@@ -1,39 +1,44 @@
 import { createRouter, createWebHistory } from 'vue-router'
-
-import Home from '@/views/Home.vue'
-import BlogPosts from '@/views/BlogPosts.vue'
-import About from '@/views/About.vue'
-import BlogPost from '@/views/BlogPost.vue'
-import BlogPostsGreeting from '@/views/BlogPostsGreeting.vue'
-import NotFound from '@/views/NotFound.vue'
-import Ads from '@/views/Ads.vue'
-import Login from '@/views/Login.vue'
-import MainLayout from '@/views/MainLayout.vue'
-import { isAuthenticated } from '@/apis/auth'
+import { getUserRole, isAuthenticated } from '@/apis/auth'
 
 
-const router =createRouter({
-  
+const router = createRouter({
+
   history: createWebHistory(),
+  scrollBehavior(to, from, savedPosition) {
+    const scrollBehaviorOptions = {
+      top: 0,
+      behavior: 'smooth',
+    }
 
+    
+    if (to.meta.scrollToElement) {
+      scrollBehaviorOptions.el = to.meta.scrollToElement
+    }
+
+    return savedPosition ?? scrollBehaviorOptions
+  },
+ 
   routes: [
     {
       path: '/',
       name: 'mainLayout',
-      component: MainLayout,
+      component: () => import('@/views/MainLayout.vue'),
       redirect: { name: 'home' },
       children: [
         {
           path: '/home',
           name: 'home',
-          component: Home,
-          meta: { requiresAuth: false },
+          component: () => import('@/views/Home.vue'),
+          meta: { requiresAuth: false, title: 'Home', isNavLink: true },
         },
         {
           path: '/blogPosts',
           name: 'blogPosts',
-          component: BlogPosts,
+          component: () => import('@/views/BlogPosts.vue'),
           meta: {
+            title: 'Blog Posts',
+            isNavLink: true,
             enterAnimation: 'animate__animated animate__bounceIn',
             leaveAnimation: 'animate__animated animate__bounceOut',
           },
@@ -42,38 +47,41 @@ const router =createRouter({
             {
               path: '',
               name: 'blogPostsGreeting',
-              component: BlogPostsGreeting,
+              component: () => import('@/views/BlogPostsGreeting.vue'),
               meta: { requiresAuth: false },
             },
             {
               path: '/blogPosts/:id(\\d+)',
               name: 'blogPost',
               components: {
-                default: BlogPost,
-                sidebar: Ads,
+                default: () => import('@/views/BlogPost.vue'),
+                sidebar: () => import('@/views/Ads.vue'),
               },
-              meta: { requiresAuth: true },
+              meta: {
+                requiresAuth: true,
+                scrollToElement: '.blog-posts-layout',
+              },
             },
           ],
         },
         {
           path: '/about',
           name: 'about',
-          component: About,
-          meta: { requiresAuth: false },
+          component: () => import('@/views/About.vue'),
+          meta: { requiresAuth: false, title: 'About', isNavLink: true },
         },
       ],
     },
     {
       path: '/login',
       name: 'login',
-      component: Login,
+      component: () => import('@/views/Login.vue'),
       meta: { requiresAuth: false },
     },
     {
       path: '/:pathMatch(.*)*', 
       name: 'notFound',
-      component: NotFound,
+      component: () => import('@/views/NotFound.vue'),
       meta: { requiresAuth: false },
     },
   ],
@@ -82,10 +90,19 @@ const router =createRouter({
 router.beforeEach((to, from) => {
   console.log(from.name, '->', to.name)
   if (to.meta.requiresAuth && !isAuthenticated.value) {
-    
+   
     return { name: 'login', query: { redirect: to.fullPath } }
   }
+
+
+
+  const userRole = getUserRole()
+  
+  if (to.meta.roles && !to.meta.roles.includes(userRole)) {
+    return { name: 'home' } 
+  }
 })
+
 
 
 router.afterEach((to, from) => {
@@ -94,3 +111,4 @@ router.afterEach((to, from) => {
 
 
 export default router
+
